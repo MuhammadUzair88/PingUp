@@ -4,19 +4,16 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import { inngest, functions } from "./config/index.js";
 import { serve } from 'inngest/express';
+import { connectDB } from './DB.js';
+
+await connectDB()
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
 
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("Database Connected");
-  })
-  .catch((err) => {
-    console.error("Error Connecting MongoDB", err);
-  });
+
 
 
 app.get('/', (req, res) => {
