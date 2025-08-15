@@ -12,7 +12,7 @@ export const assets = {
     sample_profile,
     bgImage,
     group_users,
-    sponsored_img
+    sponsored_img                                
 }
 
 export const menuItemsData = [
