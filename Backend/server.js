@@ -1,29 +1,32 @@
 import express from 'express';
 import cors from 'cors';
-import 'dotenv/config'
+import 'dotenv/config';
 import mongoose from 'mongoose';
+import { inngest, functions } from "./config/index.js";
+import { serve } from 'inngest/express';
 
-const app=express();
+const app = express();
 
 app.use(express.json());
 app.use(cors());
 
-app.get('/',(req,res)=>{
-  res.send('Server is running')
-})
+app.get('/', (req, res) => {
+  res.send('Server is running');
+});
 
-const PORT=process.env.PORT || 4000;
+app.use("/api/inngest", serve({ client: inngest, functions }));
 
-//Connecting mongodb
+const PORT = process.env.PORT || 4000;
 
-mongoose.connect(process.env.MONGODB_URI).then(()=>{
-    console.log("Database Connected")
-}).catch(()=>{
-    console.log("error Connecting MongoDB")
-})
+// Connecting mongodb
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("Database Connected");
+  })
+  .catch((err) => {
+    console.error("Error Connecting MongoDB", err);
+  });
 
-
-
-app.listen(PORT,()=>{
-    console.log(`server is running on port ${PORT}`)
-})
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
