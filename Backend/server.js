@@ -7,6 +7,9 @@ import { serve } from 'inngest/express';
 import { connectDB } from './DB.js';
 import { clerkMiddleware } from '@clerk/express'
 import userRouter from './routes/userRoutes.js';
+import postRouter from './routes/PostRoutes.js';
+import storyRouter from './routes/StoryRoutes.js';
+import messageRouter from './routes/MessageRoutes.js';
 
 await connectDB()
 
@@ -17,6 +20,9 @@ app.use(cors());
 
 app.use(clerkMiddleware())
 app.use('/api/user',userRouter)
+app.use('/api/post', postRouter);
+app.use('/api/story', storyRouter);
+app.use('/api/message', messageRouter);
 
 
 

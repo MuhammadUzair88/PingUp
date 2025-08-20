@@ -2,8 +2,11 @@
 //Get User Data using userId
 
 import imagekit from "../config/ImageKit.js";
+import Connection from "../models/Connection.js";
 import User from "../models/User.js";
 import fs from 'fs';
+import Post from "../models/Post.js";
+
 
 export const getUser=async(req,res)=>{
     
@@ -260,4 +263,134 @@ export const unFollowUser = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+//send Connection request
+
+export const sendConnectionRequest = async (req, res) => {
+  try {
+    const { userId } = req.auth(); // current user
+    const { id: receiverId } = req.body; // receiver user
+
+    // check if connection request already exists
+    const findConnection = await Connection.findOne({
+      $or: [
+        { from_user_id: userId, to_user_id: receiverId },
+        { from_user_id: receiverId, to_user_id: userId },
+      ],
+    });
+
+    if (findConnection) {
+      return res.json({
+        success: false,
+        message: "Connection Request Already exists",
+      });
+    }
+
+    // create new connection request
+    const ConnectionRequest = new Connection({
+      from_user_id: userId,
+      to_user_id: receiverId,
+    });
+
+    await ConnectionRequest.save();
+
+    return res.json({
+      success: true,
+      message: "Connection Request Sent Successfully",
+      data: ConnectionRequest,
+    });
+  } catch (error) {
+    console.error("Error sending connection request:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+
+//get User Connections
+
+export const GetUserConnections = async (req, res) => {
+  try {
+    const { userId } = req.auth(); // current user
+
+    const user = await User.findById(userId).populate(
+      "connections followers following"
+    );
+
+    const Connections = user.connections;
+    const followers = user.followers;
+    const following = user.following;
+
+    // ✅ get pending requests to accept them
+    const pendingConnections = await Connection.find({
+      to_user_id: userId,
+      status: "pending",
+    }).populate("from_user_id");
+
+    res.json({
+      connections: Connections,
+      followers,
+      following,
+      pendingConnections,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+//Accept User Request
+
+// Accept User Request
+export const AcceptRequest = async (req, res) => {
+  try {
+    const { userId } = req.auth(); // current user
+    const { id } = req.body; // sender id
+
+    const acceptConnection = await Connection.findOneAndUpdate(
+      { from_user_id: id, to_user_id: userId }, // Query
+      { status: "accepted" }, // Update
+      { new: true } // Return updated document
+    );
+
+    if (!acceptConnection) {
+      return res.status(404).json({ message: "Connection request not found" });
+    }
+
+    res.status(200).json({
+      message: "Connection request accepted",
+      connection: acceptConnection,
+    });
+  } catch (error) {
+    console.error("Error accepting connection:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+
+export const getUserProfiles=async(req,res)=>{
+  try{
+    const {profileId}=req.params;
+    const profile=await User.findById(profileId)
+    if(!profile){
+      return res.status(404).json({success:false,message:"Profile not found"})
+    }
+    const posts=await Post.find({ user: profileId }).populate('user')
+    res.status(200).json({success:true,profile,posts})
+
+  }
+  catch(error){
+    console.error(error);
+    res.status(500).json({success:false,message:error.message})
+  }
+}
+
+
+
+
+
 
