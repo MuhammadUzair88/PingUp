@@ -69,7 +69,7 @@ export const getUserPosts = async (req, res) => {
     const { userId } = req.auth(); // get logged-in user id
 
     // find all posts created by this user
-    const posts = await Post.find({ user: userId })
+    const posts = await Post.find({})
       .populate('user')   // optional: include user details
       .sort({ createdAt: -1 }); // newest first
 
