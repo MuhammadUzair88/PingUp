@@ -1,19 +1,95 @@
-import React from "react";
-import { dummyConnectionsData, dummyUserData } from "../assets/assets";
-import {
-  Plus,
-  UserPlus,
-  Search,
-  MessageCircleCodeIcon,
-  MessageCircleDashed,
-} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Plus, UserPlus, Search, MessageCircle } from "lucide-react";
+import { useUser2 } from "../context/UserContext";
+import axios from "axios";
+import { useAuth } from "@clerk/clerk-react";
 
 const Discover = () => {
-  const currentUser = dummyUserData;
+  const { userData, FetchCurrentUser } = useUser2();
+  const currentUser = userData;
 
-  const handlefollow = async () => {};
+  const [input, setInput] = useState("");
+  const [users, setUsers] = useState([]);
 
-  const handleConnection = async () => {};
+  const { getToken } = useAuth();
+
+  // Fetch discover users whenever input changes
+  useEffect(() => {
+    const discoverUsers = async () => {
+      try {
+        const token = await getToken();
+        const res = await axios.post(
+          `${import.meta.env.VITE_BASEURL}/api/user/discover`,
+          { input },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (res.data.success) {
+          setUsers(res.data.users);
+        } else {
+          setUsers([]);
+        }
+      } catch (error) {
+        console.error("Error discovering users:", error);
+        setUsers([]);
+      }
+    };
+
+    discoverUsers();
+  }, [input, getToken]);
+
+  // Follow / Unfollow handler
+  const handleFollow = async (id) => {
+    try {
+      const token = await getToken();
+      const res = await axios.post(
+        `${import.meta.env.VITE_BASEURL}/api/user/follow`,
+        { id },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.data.success) {
+        await FetchCurrentUser();
+      }
+    } catch (err) {
+      console.error("Error following user:", err);
+      alert(err.response?.data?.message || "Failed to follow user");
+    }
+  };
+
+  // Send connection request
+  const handleSendRequest = async (id) => {
+    try {
+      const token = await getToken();
+      const res = await axios.post(
+        `${import.meta.env.VITE_BASEURL}/api/user/connect`,
+        { id },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.data.success) {
+        alert("Connection request sent!");
+        await FetchCurrentUser();
+      } else {
+        alert(res.data.message);
+      }
+    } catch (err) {
+      console.error("Error sending request:", err);
+      alert(err.response?.data?.message || "Failed to send request");
+    }
+  };
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
@@ -27,6 +103,8 @@ const Discover = () => {
       <div className="relative mb-8">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
         <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
           type="text"
           placeholder="Search by name, username, or location..."
           className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500 text-sm sm:text-base"
@@ -35,7 +113,7 @@ const Discover = () => {
 
       {/* Grid */}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {dummyConnectionsData.map((user) => (
+        {users.map((user) => (
           <div
             key={user._id}
             className="bg-white rounded-xl shadow hover:shadow-md transition p-6 flex flex-col items-center text-center"
@@ -57,7 +135,7 @@ const Discover = () => {
             {/* Info badges */}
             <div className="flex gap-2 mt-3 flex-wrap justify-center text-xs text-gray-600">
               <span className="px-2 py-1 border rounded-full">
-                New York, NY
+                {user.location || "Unknown"}
               </span>
               <span className="px-2 py-1 border rounded-full">
                 {user.followers?.length || 0} Followers
@@ -67,22 +145,28 @@ const Discover = () => {
             {/* Buttons */}
             <div className="flex gap-2 mt-5 w-full">
               <button
-                onClick={handlefollow}
+                onClick={() => handleFollow(user._id)}
                 className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg py-2 text-sm flex items-center justify-center gap-1"
               >
                 <UserPlus className="w-4 h-4" />
                 {currentUser?.following.includes(user._id)
-                  ? "following"
-                  : "follow"}
+                  ? "Following"
+                  : "Follow"}
               </button>
               <button
-                onClick={handleConnection}
+                onClick={() => {
+                  if (!currentUser?.connections.includes(user._id)) {
+                    handleSendRequest(user._id);
+                  } else {
+                    alert("Open chat page here"); // you can navigate to chat instead
+                  }
+                }}
                 className="p-2 border rounded-lg hover:bg-gray-100 transition"
               >
-                {currentUser.connections.includes(user._id) ? (
-                  <Plus className="w-4 h-4" />
+                {currentUser?.connections.includes(user._id) ? (
+                  <MessageCircle className="w-4 h-4 text-green-600" />
                 ) : (
-                  <MessageCircleDashed className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
                 )}
               </button>
             </div>

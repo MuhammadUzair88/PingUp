@@ -47,8 +47,8 @@ export const UpdateUser=async(req,res)=>{
       location:location,
       full_name:full_name,
     }
-    const profile=req.files.profile && req.files.profile[0]
-    const cover=req.files.cover && req.files.cover[0]
+    const profile=req.files.profile_picture && req.files.profile_picture[0]
+    const cover=req.files.cover_photo && req.files.cover_photo[0]
     
     if(profile){
       const buffer=fs.readFileSync(profile.path)
@@ -156,6 +156,7 @@ export const followUser = async (req, res) => {
     if (user.following.includes(id)) {
       return res.json({
         success: false,
+
         message: "You have already followed this user",
       });
     }
@@ -346,22 +347,34 @@ export const GetUserConnections = async (req, res) => {
 //Accept User Request
 
 // Accept User Request
+// Accept User Request
 export const AcceptRequest = async (req, res) => {
   try {
-    const { userId } = req.auth(); // current user
+    const { userId } = req.auth(); // current user (receiver)
     const { id } = req.body; // sender id
 
+    // ✅ update connection status
     const acceptConnection = await Connection.findOneAndUpdate(
-      { from_user_id: id, to_user_id: userId }, // Query
-      { status: "accepted" }, // Update
-      { new: true } // Return updated document
+      { from_user_id: id, to_user_id: userId },
+      { status: "accepted" },
+      { new: true }
     );
 
     if (!acceptConnection) {
       return res.status(404).json({ message: "Connection request not found" });
     }
 
+    // ✅ add each other in User.connections
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { connections: id }, // prevent duplicates
+    });
+
+    await User.findByIdAndUpdate(id, {
+      $addToSet: { connections: userId },
+    });
+
     res.status(200).json({
+      success: true,
       message: "Connection request accepted",
       connection: acceptConnection,
     });
@@ -370,6 +383,7 @@ export const AcceptRequest = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 
 export const getUserProfiles=async(req,res)=>{

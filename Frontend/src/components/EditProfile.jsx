@@ -1,16 +1,24 @@
-import React, { useState } from "react";
-import { dummyUserData } from "../assets/assets";
+import React, { useState, useEffect } from "react";
+import { useUser2 } from "../context/UserContext";
 
 const EditProfile = () => {
-  const user = dummyUserData;
-  const [editForm, setEditForm] = useState({
-    username: user.username,
-    bio: user.bio,
-    location: user.location,
-    profile_picture: null,
-    cover_photo: null,
-    full_name: user.full_name,
-  });
+  const { userData, EditProfile } = useUser2();
+
+  const [editForm, setEditForm] = useState(null);
+
+  // Initialize form when userData becomes available
+  useEffect(() => {
+    if (userData) {
+      setEditForm({
+        username: userData.username || "",
+        bio: userData.bio || "",
+        location: userData.location || "",
+        profile_picture: null,
+        cover_photo: null,
+        full_name: userData.full_name || "",
+      });
+    }
+  }, [userData]);
 
   const handleInputChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
@@ -28,9 +36,20 @@ const EditProfile = () => {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    // Logic to update the profile (e.g., API call)
-    console.log("Saved profile data: ", editForm);
+    if (editForm) {
+      await EditProfile(editForm);
+      console.log("Saved profile data: ", editForm);
+    }
   };
+
+  // 🔥 Guard render until form is ready
+  if (!editForm) {
+    return (
+      <div className="fixed top-0 bottom-0 left-0 right-0 z-110 h-screen flex items-center justify-center bg-black/50">
+        <p className="text-white">Loading profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed top-0 bottom-0 left-0 right-0 z-110 h-screen overflow-y-scroll bg-black/50">
@@ -47,7 +66,7 @@ const EditProfile = () => {
                   src={
                     editForm.profile_picture
                       ? URL.createObjectURL(editForm.profile_picture)
-                      : user.profile_picture
+                      : userData.profile_picture
                   }
                   alt="Profile"
                   className="w-full h-full object-cover"
@@ -56,7 +75,6 @@ const EditProfile = () => {
               <input
                 type="file"
                 accept="image/*"
-                id="profile_picture"
                 onChange={(e) => handleImageChange(e, "profile_picture")}
                 className="text-sm text-gray-600"
               />
@@ -72,7 +90,7 @@ const EditProfile = () => {
                   src={
                     editForm.cover_photo
                       ? URL.createObjectURL(editForm.cover_photo)
-                      : user.cover_photo
+                      : userData.cover_photo
                   }
                   alt="Cover"
                   className="w-full h-full object-cover"
@@ -81,7 +99,6 @@ const EditProfile = () => {
               <input
                 type="file"
                 accept="image/*"
-                id="cover_photo"
                 onChange={(e) => handleImageChange(e, "cover_photo")}
                 className="text-sm text-gray-600"
               />
@@ -143,7 +160,7 @@ const EditProfile = () => {
               />
             </div>
 
-            {/* Action Buttons */}
+            {/* Buttons */}
             <div className="flex justify-end gap-3">
               <button
                 type="button"

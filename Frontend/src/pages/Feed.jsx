@@ -3,12 +3,31 @@ import { assets, dummyPostsData } from "../assets/assets";
 import StoriesBar from "../components/StoriesBar";
 import PostCard from "../components/PostCard";
 import RecentMessages from "../components/RecentMessages";
+import axios from "axios";
+import { useAuth } from "@clerk/clerk-react";
 
 const Feed = () => {
   const [feeds, setfeeds] = useState([]);
+  const { getToken } = useAuth();
 
   const fetchFeeds = async () => {
-    setfeeds(dummyPostsData);
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const res = await axios.get(
+        `${import.meta.env.VITE_BASEURL}/api/post/feed`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setfeeds(res.data.posts);
+      console.log("Fetched post data:", res.data.posts);
+    } catch (err) {
+      console.error("Error fetching posts:", err);
+    }
   };
 
   useEffect(() => {

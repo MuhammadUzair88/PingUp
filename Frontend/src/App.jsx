@@ -11,16 +11,23 @@ import { Route, Routes } from "react-router-dom";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import Layout from "./pages/Layout";
 import { useEffect } from "react";
+import { useUser2 } from "./context/UserContext";
 
 const App = () => {
   const { user } = useUser();
   const { getToken } = useAuth();
 
+  const { FetchCurrentUser } = useUser2();
+
   useEffect(() => {
-    if (user) {
-      getToken().then((token) => console.log(token));
-    }
-  }, [user]);
+    const fetchUserData = async () => {
+      const token = await getToken();
+      if (token) {
+        FetchCurrentUser();
+      }
+    };
+    fetchUserData();
+  }, [user, getToken]);
 
   return (
     <div>

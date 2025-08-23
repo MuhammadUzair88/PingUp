@@ -1,6 +1,4 @@
 import express from 'express';
-
-
 import { addPost, getUserPosts, likePost } from '../controllers/PostController.js';
 import { upload } from '../middlewares/multer.js';
 import { protect } from '../middlewares/auth.js';
